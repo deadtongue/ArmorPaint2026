@@ -6,27 +6,37 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      # Скачать исходники ArmorPaint 1.0 как zip-архив
+      - name: Download source archive
+        run: |
+          curl -L https://github.com/armory3d/armorpaint/archive/refs/tags/v1.0.zip -o armorpaint.zip
+          7z x armorpaint.zip -o.
+          Rename-Item armorpaint-1.0 armorpaint
 
-      # Create the directory for V8 runtime (required for compilation)
+      # Перейти в папку сборки
+      - run: |
+          cd armorpaint\paint
+
+      # Создать папку для V8
       - run: |
           New-Item -ItemType Directory -Force -Path armorcore\v8\libraries\win32\release
-          curl -L https://github.com/armory3d/armorpaint/releases/download/v1.0/v8_monolith.7z -o armorcore\v8\libraries\win32\release\v8_monolith.7z
-          7z x armorcore\v8\libraries\win32\release\v8_monolith.7z -oarmorcore\v8\libraries\win32\release\
 
-      # Generate Visual Studio project using Kinc
+      # Скачать V8 из репозитория Kinc
+      - run: |
+          curl -L https://github.com/armory3d/armorpaint/raw/refs/tags/v1.0/armorcore/v8/libraries/win32/release/v8_monolith.7z -o armorcore\v8\libraries\win32\release\v8_monolith.7z
+          7z x armorcore\v8\libraries\win32\release\v8_monolith.7z -oarmorcore\v8\libraries\win32\release
+
+      # Генерация проекта
       - run: |
           cd armorcore
           Kinc\make --from armorcore -g direct3d11
           cd ..
 
-      # Build the solution
+      # Сборка
       - run: |
           msbuild build\ArmorPaint.sln /p:Configuration=Release /p:Platform=x64
 
-      # Upload the resulting executable
+      # Артефакт
       - uses: actions/upload-artifact@v4
         with:
           name: armorpaint-windows
