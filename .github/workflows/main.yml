@@ -10,8 +10,9 @@ jobs:
         with:
           submodules: recursive
 
-      # Download and extract V8 runtime (required for compilation)
+      # Create the directory for V8 runtime (required for compilation)
       - run: |
+          New-Item -ItemType Directory -Force -Path armorcore\v8\libraries\win32\release
           curl -L https://github.com/armory3d/armorpaint/releases/download/v1.0/v8_monolith.7z -o armorcore\v8\libraries\win32\release\v8_monolith.7z
           7z x armorcore\v8\libraries\win32\release\v8_monolith.7z -oarmorcore\v8\libraries\win32\release\
 
