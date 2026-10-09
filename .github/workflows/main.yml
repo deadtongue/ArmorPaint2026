@@ -1,0 +1,32 @@
+name: ArmorPaint2026
+
+on: [workflow_dispatch]
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Download and extract V8 runtime (required for compilation)
+      - run: |
+          curl -L https://github.com/armory3d/armorpaint/releases/download/v1.0/v8_monolith.7z -o armorcore\v8\libraries\win32\release\v8_monolith.7z
+          7z x armorcore\v8\libraries\win32\release\v8_monolith.7z -oarmorcore\v8\libraries\win32\release\
+
+      # Generate Visual Studio project using Kinc
+      - run: |
+          cd armorcore
+          Kinc\make --from armorcore -g direct3d11
+          cd ..
+
+      # Build the solution
+      - run: |
+          msbuild build\ArmorPaint.sln /p:Configuration=Release /p:Platform=x64
+
+      # Upload the resulting executable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: armorpaint-windows
+          path: build\x64\Release\ArmorPaint.exe
