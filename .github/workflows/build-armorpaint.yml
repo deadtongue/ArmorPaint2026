@@ -1,4 +1,4 @@
-name: ArmorPaint_Win_x64
+name: Build ArmorPaint for Windows x64
 
 on:
   workflow_dispatch:
@@ -26,12 +26,20 @@ jobs:
           choco install llvm -y
           echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      - name: Fetch LFS files in armorcore
+        shell: pwsh
+        run: |
+          cd armorpaint/armorcore
+          git lfs install --force
+          git lfs pull
+          Get-ChildItem -Recurse v8/libraries/win32/release | Select-Object Name, Length
+
       - name: Unpack V8 monolith (required for build)
         shell: pwsh
         run: |
           $f = "armorpaint/armorcore/v8/libraries/win32/release/v8_monolith.7z"
           if (-not (Test-Path $f)) {
-            Write-Error "Missing $f — check submodules and LFS"
+            Write-Error "Missing $f even after LFS pull"
             exit 1
           }
           7z x -y $f -o"armorpaint/armorcore/v8/libraries/win32/release/"
