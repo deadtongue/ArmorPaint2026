@@ -6,37 +6,33 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      # Скачать исходники ArmorPaint 1.0 как zip-архив
-      - name: Download source archive
+      # Download source archive using PowerShell native commands
+      - name: Download and extract source
         run: |
-          curl -L https://github.com/armory3d/armorpaint/archive/refs/tags/v1.0.zip -o armorpaint.zip
-          7z x armorpaint.zip -o.
+          Invoke-WebRequest -Uri "https://github.com/armory3d/armorpaint/archive/refs/tags/v1.0.zip" -OutFile "armorpaint.zip"
+          Expand-Archive -Path armorpaint.zip -DestinationPath .
           Rename-Item armorpaint-1.0 armorpaint
 
-      # Перейти в папку сборки
+      # Create V8 directory
       - run: |
-          cd armorpaint\paint
+          New-Item -ItemType Directory -Force -Path armorpaint\armorcore\v8\libraries\win32\release
 
-      # Создать папку для V8
+      # Download V8 from raw GitHub URL
       - run: |
-          New-Item -ItemType Directory -Force -Path armorcore\v8\libraries\win32\release
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/armory3d/armorpaint/v1.0/armorcore/v8/libraries/win32/release/v8_monolith.7z" -OutFile "v8.7z"
+          & 'C:\Program Files\7-Zip\7z.exe' x v8.7z -oarmorpaint\armorcore\v8\libraries\win32\release\
 
-      # Скачать V8 из репозитория Kinc
+      # Generate Visual Studio project
       - run: |
-          curl -L https://github.com/armory3d/armorpaint/raw/refs/tags/v1.0/armorcore/v8/libraries/win32/release/v8_monolith.7z -o armorcore\v8\libraries\win32\release\v8_monolith.7z
-          7z x armorcore\v8\libraries\win32\release\v8_monolith.7z -oarmorcore\v8\libraries\win32\release
-
-      # Генерация проекта
-      - run: |
-          cd armorcore
+          cd armorpaint\armorcore
           Kinc\make --from armorcore -g direct3d11
           cd ..
 
-      # Сборка
+      # Build solution
       - run: |
           msbuild build\ArmorPaint.sln /p:Configuration=Release /p:Platform=x64
 
-      # Артефакт
+      # Upload artifact
       - uses: actions/upload-artifact@v4
         with:
           name: armorpaint-windows
